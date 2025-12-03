@@ -2,61 +2,71 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>My Tracker</title>
+  <title>My Device Tracker</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 540px; margin: auto;}
-    button { font-size: 16px; padding: 10px 14px; }
-    #status { margin-top: 12px; color: #333; }
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 500px; margin: auto; }
+    button { font-size: 18px; padding: 12px 18px; margin-top: 20px; cursor: pointer; }
+    #status { margin-top: 20px; font-size: 16px; }
   </style>
 </head>
 <body>
-  <h2>Send my current location</h2>
-  <p>Tap <b>Send location</b> and allow the browser to share your location.</p>
-  <button id="send">Send location</button>
+  <h2>Track My Current Location</h2>
+  <p>Click the button below and allow location permission.</p>
+
+  <button id="send">Send My Location</button>
   <div id="status"></div>
 
 <script>
-const endpoint = 'https://script.google.com/macros/s/AKfycbzg_n9okm0Wr61uuq7vERV0ypHBOmAMVed5-wO1nWLuj05HuYLiFHpt2UWdnzU1wzXe/exec'; // <<-- paste your Apps Script URL here
+// ✅ Your Apps Script endpoint
+const endpoint = "https://script.google.com/macros/s/AKfycbzg_n9okm0Wr61uuq7vERV0ypHBOmAMVed5-wO1nWLuj05HuYLiFHpt2UWdnzU1wzXe/exec";
 
-document.getElementById('send').addEventListener('click', function() {
-  const status = document.getElementById('status');
-  status.textContent = 'Requesting location...';
+document.getElementById("send").addEventListener("click", function () {
+  const status = document.getElementById("status");
+  status.textContent = "Requesting location...";
 
   if (!navigator.geolocation) {
-    status.textContent = 'Geolocation not supported by this browser.';
+    status.textContent = "Your browser does not support location.";
     return;
   }
 
-  navigator.geolocation.getCurrentPosition(async function(pos) {
+  navigator.geolocation.getCurrentPosition(async function (pos) {
     const lat = pos.coords.latitude;
     const lon = pos.coords.longitude;
     const acc = pos.coords.accuracy;
-    const ua = navigator.userAgent || '';
+    const ua = navigator.userAgent;
 
-    status.textContent = `Got location: ${lat.toFixed(6)}, ${lon.toFixed(6)} — sending...`;
+    status.textContent = `Location found: ${lat}, ${lon}. Sending...`;
 
-    // Send as JSON POST
     try {
       const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({lat: lat, lon: lon, acc: acc, ua: ua})
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lat: lat,
+          lon: lon,
+          acc: acc,
+          ua: ua
+        })
       });
-      const j = await res.json();
-      if (j.status === 'ok') {
-        status.innerHTML = `Saved at ${new Date(j.timestamp).toLocaleString()} — <a href="${j.maplink}" target="_blank">Open in Google Maps</a>`;
-        // Open maps automatically if you want:
-        // window.location.href = j.maplink;
+
+      const json = await res.json();
+      if (json.status === "ok") {
+        status.innerHTML = `Location saved at ${new Date(json.timestamp).toLocaleString()}<br><a href="${json.maplink}" target="_blank">Open in Google Maps</a>`;
+        
+        // Auto-open Maps (optional)
+        // window.location.href = json.maplink;
       } else {
-        status.textContent = 'Saved but response not OK: ' + JSON.stringify(j);
+        status.textContent = "Error saving: " + JSON.stringify(json);
       }
     } catch (err) {
-      status.textContent = 'Send failed: ' + err;
+      status.textContent = "Failed: " + err;
     }
-  }, function(err) {
-    status.textContent = 'Location error: ' + (err.message || err.code);
-  }, {enableHighAccuracy: true, maximumAge: 0});
+
+  }, function (err) {
+    status.textContent = "Location error: " + err.message;
+  }, { enableHighAccuracy: true });
 });
 </script>
+
 </body>
 </html>
